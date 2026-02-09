@@ -1,5 +1,7 @@
-import { LayoutDashboard, Building2, Users, TrendingUp, FileText, Package, Settings, List, Mail, FolderOpen } from 'lucide-react';
-import { ViewType } from '@/app/App';
+import { LayoutDashboard, Building2, Users, TrendingUp, FileText, Package, Settings, List, Mail, FolderOpen, LogOut, User, Building } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { ViewType } from '@/app/MainApp';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -7,17 +9,26 @@ interface SidebarProps {
 }
 
 export function Sidebar({ currentView, onViewChange }: SidebarProps) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
   const navItems = [
     { id: 'dashboard' as ViewType, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'lists' as ViewType, label: 'List Management', icon: List },
     { id: 'accounts' as ViewType, label: 'Accounts', icon: Building2 },
     { id: 'contacts' as ViewType, label: 'Contacts', icon: Users },
+    { id: 'companies' as ViewType, label: 'Companies', icon: Building },
     { id: 'pipeline' as ViewType, label: 'Pipeline', icon: TrendingUp },
     { id: 'sequences' as ViewType, label: 'Email Sequences', icon: Mail },
     { id: 'dealrooms' as ViewType, label: 'Deal Rooms', icon: FolderOpen },
     { id: 'proposals' as ViewType, label: 'Proposals', icon: FileText },
     { id: 'products' as ViewType, label: 'Product Catalog', icon: Package },
   ];
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
@@ -50,10 +61,30 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
         </div>
       </nav>
 
-      <div className="p-4 border-t border-gray-200">
-        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+      <div className="p-4 border-t border-gray-200 space-y-2">
+        {user && (
+          <div className="flex items-center gap-3 px-3 py-2 mb-2">
+            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <User className="w-4 h-4 text-blue-700" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
+              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+            </div>
+          </div>
+        )}
+        <button 
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
           <Settings className="w-5 h-5" />
           Settings
+        </button>
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50"
+        >
+          <LogOut className="w-5 h-5" />
+          Logout
         </button>
       </div>
     </div>

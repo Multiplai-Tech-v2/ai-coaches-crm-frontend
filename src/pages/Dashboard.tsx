@@ -1,16 +1,14 @@
-import { TrendingUp, DollarSign, Users, FileText, ArrowUpRight, Mail, Phone, Calendar } from 'lucide-react';
+import { TrendingUp, DollarSign, Users, FileText, Mail, Phone, Calendar } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Badge } from '@/app/components/ui/badge';
 import { Button } from '@/app/components/ui/button';
 import { mockDeals, mockActivities, calculateCommission, mockAccounts } from '@/app/data/mockData';
-import { ViewType } from '@/app/App';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-interface DashboardProps {
-  onNavigate: (view: ViewType) => void;
-}
+export function Dashboard() {
+  const navigate = useNavigate();
 
-export function Dashboard({ onNavigate }: DashboardProps) {
   // Calculate pipeline metrics
   const openDeals = mockDeals.filter(d => d.status === 'Open');
   const totalPipelineValue = openDeals.reduce((sum, deal) => sum + deal.value, 0);
@@ -194,7 +192,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                 <CardTitle>Top Opportunities</CardTitle>
                 <CardDescription>High-value deals in progress</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => onNavigate('pipeline')}>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/pipeline')}>
                 View Pipeline
               </Button>
             </div>
