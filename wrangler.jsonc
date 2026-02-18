@@ -1,8 +1,10 @@
+// wrangler.jsonc
 {
-  "name": "ai-coaches-crm-fe",
-  "compatibility_date": "2026-02-18",
-  "assets": {
-    "directory": "./dist",
-    "not_found_handling": "single-page-application"
+  "name": "ai-coaches-crm-frontend",
+  "type": "javascript",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
   }
 }
