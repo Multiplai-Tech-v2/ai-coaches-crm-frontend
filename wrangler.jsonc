@@ -1,10 +1,9 @@
-// wrangler.jsonc
+// wrangler.jsonc – static assets only (no worker entry point)
 {
   "name": "ai-coaches-crm-frontend",
-  "type": "javascript",
-  "main": "src/index.ts",
-  "scripts": {
-    "build": "vite build",
-    "dev": "vite"
+  "compatibility_date": "2026-02-18",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
   }
 }
