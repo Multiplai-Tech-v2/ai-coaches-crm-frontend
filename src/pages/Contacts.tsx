@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Search, Plus, Mail, Phone, User, Building2 } from 'lucide-react';
+import { Users, Search, Plus, Mail, Phone, User, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Badge } from '@/app/components/ui/badge';
@@ -14,27 +14,69 @@ import {
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { Contact, ContactsResponse } from '@/types/contact';
 import { ContactFormDialog } from '@/components/ContactFormDialog';
+import { ContactViewDialog } from '@/components/ContactViewDialog';
+import { Skeleton } from '@/app/components/ui/skeleton';
 
 export function Contacts() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [meta, setMeta] = useState<ContactsResponse['meta']>(undefined);
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const { get, loading, error } = useAuthApi();
 
   useEffect(() => {
-    fetchContacts();
-  }, []);
+    fetchContacts(currentPage, perPage);
+  }, [currentPage, perPage]);
 
-  const fetchContacts = async () => {
+  const fetchContacts = async (page = 1, itemsPerPage = 15) => {
     try {
-      const response = await get<ContactsResponse>('/v1/people');
+      const response = await get<ContactsResponse>(
+        `/v1/people?page=${page}&per_page=${itemsPerPage}`
+      );
       if (response?.data) {
         setContacts(response.data);
+        setMeta(response.meta);
       }
     } catch (err) {
       console.error('Failed to fetch contacts:', err);
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePerPageChange = (value: string) => {
+    setPerPage(Number(value));
+    setCurrentPage(1);
+  };
+
+  const getPageNumbers = () => {
+    if (!meta) return [];
+    const totalPages = meta.last_page;
+    const pages: (number | 'ellipsis')[] = [];
+
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    pages.push(1);
+    if (currentPage > 4) pages.push('ellipsis');
+
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+
+    if (currentPage < totalPages - 3) pages.push('ellipsis');
+    pages.push(totalPages);
+
+    return pages;
   };
 
   const filteredContacts = contacts.filter(contact => {
@@ -95,7 +137,7 @@ export function Contacts() {
             <Users className="w-12 h-12 text-red-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load contacts</h3>
             <p className="text-red-500 mb-4">{error}</p>
-            <Button onClick={fetchContacts}>Try Again</Button>
+            <Button onClick={() => fetchContacts(currentPage, perPage)}>Try Again</Button>
           </div>
         </div>
       </div>
@@ -147,7 +189,35 @@ export function Contacts() {
 
       {/* Contacts List */}
       <div className="space-y-4">
-        {filteredContacts.map((contact) => (
+        {loading && (
+          Array.from({ length: perPage > 5 ? 5 : perPage }).map((_, i) => (
+            <Card key={i} className="p-6">
+              <div className="flex items-start gap-4">
+                <Skeleton className="w-14 h-14 rounded-full shrink-0" />
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-5 w-48" />
+                    <Skeleton className="h-4 w-16" />
+                  </div>
+                  <Skeleton className="h-4 w-36" />
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-6 w-28 rounded-full" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <Skeleton className="h-4 w-44" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <Skeleton className="h-8 w-20 rounded-md" />
+                  <Skeleton className="h-8 w-16 rounded-md" />
+                </div>
+              </div>
+            </Card>
+          ))
+        )}
+        {!loading && filteredContacts.map((contact) => (
           <Card key={contact.id} className="p-6 hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-4 flex-1">
@@ -220,7 +290,16 @@ export function Contacts() {
                     Email
                   </Button>
                 )}
-                <Button variant="outline" size="sm">View</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedContactId(contact.id);
+                    setIsViewDialogOpen(true);
+                  }}
+                >
+                  View
+                </Button>
               </div>
             </div>
           </Card>
@@ -235,10 +314,123 @@ export function Contacts() {
         </div>
       )}
 
+      {/* Pagination */}
+      {meta && meta.last_page > 1 && (
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          {/* Results info + per-page selector */}
+          <div className="flex items-center gap-4 text-sm text-gray-500">
+            <div className="flex items-center gap-2">
+              {loading && (
+                <div className="w-4 h-4 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+              )}
+              <span>
+                Showing {meta.from}–{meta.to} of {meta.total} contacts
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>Per page:</span>
+              <Select value={String(perPage)} onValueChange={handlePerPageChange}>
+                <SelectTrigger className="w-20 h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15">15</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Page navigation */}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage <= 1 || loading}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+
+            {getPageNumbers().map((page, idx) =>
+              page === 'ellipsis' ? (
+                <span
+                  key={`ellipsis-${idx}`}
+                  className="flex h-8 w-8 items-center justify-center text-gray-400 text-sm"
+                >
+                  …
+                </span>
+              ) : (
+                <Button
+                  key={page}
+                  variant={page === currentPage ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handlePageChange(page)}
+                  disabled={loading}
+                  className="h-8 w-8 p-0 text-sm"
+                >
+                  {page}
+                </Button>
+              )
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= (meta?.last_page ?? 1) || loading}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Show results info even on single page */}
+      {meta && meta.last_page === 1 && meta.total > 0 && (
+        <div className="mt-6 flex items-center justify-between text-sm text-gray-500">
+          <div className="flex items-center gap-2">
+            {loading && (
+              <div className="w-4 h-4 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+            )}
+            <span>
+              Showing {meta.from}–{meta.to} of {meta.total} contacts
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span>Per page:</span>
+            <Select value={String(perPage)} onValueChange={handlePerPageChange}>
+              <SelectTrigger className="w-20 h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="15">15</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
       <ContactFormDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
-        onSuccess={fetchContacts}
+        onSuccess={() => fetchContacts(currentPage, perPage)}
+      />
+
+      <ContactViewDialog
+        contactId={selectedContactId}
+        open={isViewDialogOpen}
+        onOpenChange={(open) => {
+          setIsViewDialogOpen(open);
+          if (!open) setSelectedContactId(null);
+        }}
       />
     </div>
   );

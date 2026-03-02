@@ -20,6 +20,43 @@ export interface Contact {
   updated_at?: string;
 }
 
+export interface ContactCompany {
+  id: string;
+  name: string;
+  position?: string;
+  position_level?: string;
+  is_primary?: boolean;
+  is_current?: boolean;
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface ContactInvestor {
+  id: string;
+  name: string;
+  position?: string;
+  position_level?: string;
+  is_primary_contact?: boolean;
+  is_current?: boolean;
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface ContactDetail extends Contact {
+  external_id?: string;
+  full_name?: string;
+  middle_name?: string;
+  prefix?: string;
+  gender?: string;
+  year_of_birth?: number;
+  mobile_phone?: string;
+  fax?: string;
+  biography?: string;
+  university_institution?: string;
+  companies?: ContactCompany[];
+  investors?: ContactInvestor[];
+}
+
 export interface ContactsResponse {
   data: Contact[];
   meta?: {
